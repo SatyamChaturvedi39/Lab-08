@@ -1,23 +1,23 @@
-// controllers/mailController.js
 import nodemailer from "nodemailer";
 
-const EMAIL_USER = process.env.EMAIL_USER;
-const EMAIL_PASS = process.env.EMAIL_PASS;
-const RECEIVER_EMAIL = process.env.RECEIVER_EMAIL || EMAIL_USER;
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: { user: EMAIL_USER, pass: EMAIL_PASS },
-  // optional explicit host/port, uncomment to try explicit ports:
-  // host: "smtp.gmail.com", port: 465, secure: true
-});
-
-// verify once at startup to print useful info
-transporter.verify()
-  .then(() => console.log("SMTP transporter verified"))
-  .catch(err => console.error("SMTP verify failed:", err && err.message ? err.message : err));
-
 export async function sendContact(req, res) {
+  const EMAIL_USER = process.env.EMAIL_USER;
+  const EMAIL_PASS = process.env.EMAIL_PASS;
+  const RECEIVER_EMAIL = process.env.EMAIL_USER;
+
+  console.log(EMAIL_USER);
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: EMAIL_USER,
+      pass: EMAIL_PASS
+    }
+  });
+  
+
+  if (!EMAIL_USER || !EMAIL_PASS) {
+    console.warn("EMAIL_USER or EMAIL_PASS not set. Emails will not be sent.");
+  }
   try {
     const { name, email, subject, message } = req.body || {};
     if (!name || !email || !message) {
@@ -38,12 +38,7 @@ export async function sendContact(req, res) {
     const info = await transporter.sendMail(mailOptions);
     return res.json({ ok: true, messageId: info.messageId });
   } catch (err) {
-    // log full stack so Render logs show the cause
-    console.error("sendContact error:", err && err.stack ? err.stack : err);
-
-    // return friendly but informative message to client
-    return res.status(500).json({
-      error: err && err.message ? err.message : "Unknown server error"
-    });
+    console.error("sendContact error:", err);
+    return res.status(500).json({ error: "Failed to send email" });
   }
 }
